@@ -2,17 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Fpr;
 using AutoMapper;
+using Mapster;
 using Omu.ValueInjecter;
-using Fm = FastMapper;
 
 namespace Benchmark
 {
     class Program
     {
-        private static decimal AutomapperTime;
-        private static decimal FprTime;
+        private static double AutomapperTime;
+        private static double MapsterTime;
 
         static void Main(string[] args)
         {
@@ -32,13 +31,11 @@ namespace Benchmark
         private static void TestSimpleTypes()
         {
             Console.WriteLine("Test 1 : Simple Types");
-            Console.WriteLine("Competitors : Fpr, Fast Mapper, Value Injecter, AutoMapper");
+            Console.WriteLine("Competitors : Mapster, Fast Mapper, Value Injecter, AutoMapper");
 
             var foo = GetFoo();
 
             Mapper.CreateMap<Foo, Foo>();
-
-            //Fm.TypeAdapter.Adapt<Foo, Foo>(foo); // cache mapping strategy
 
             TypeAdapter.Adapt<Foo, Foo>(foo); // cache mapping strategy
 
@@ -46,7 +43,7 @@ namespace Benchmark
 
             TestSimple(foo, 10000);
 
-            //TestSimple(foo, 100000);
+            TestSimple(foo, 100000);
 
             //TestSimple(foo, 1000000);
         }
@@ -57,7 +54,7 @@ namespace Benchmark
             Console.WriteLine();
 
             Console.WriteLine("Test 2 : Complex Types");
-            Console.WriteLine("Competitors : Handwriting Mapper, Fpr, FastMapper, AutoMapper");
+            Console.WriteLine("Competitors : Handwriting Mapper, Mapster, FastMapper, AutoMapper");
             Console.WriteLine("(Value Injecter cannot convert complex type, Value injecter need a custom injecter)");
 
             var customer = GetCustomer();
@@ -65,8 +62,6 @@ namespace Benchmark
             Mapper.CreateMap<Address, Address>();
             Mapper.CreateMap<Address, AddressDTO>();
             Mapper.CreateMap<Customer, CustomerDTO>();
-
-            //Fm.TypeAdapter.Adapt<Customer, CustomerDTO>(customer); // cache mapping strategy
 
             //TypeAdapterConfig.GlobalSettings.DestinationTransforms.Upsert<Guid>(x => x);
             TypeAdapter.Adapt<Customer, CustomerDTO>(customer); // cache mapping strategy
@@ -81,7 +76,7 @@ namespace Benchmark
             Test(customer, 100000);
 
             Console.WriteLine();
-            Console.WriteLine("Automapper to Fpr ratio: " + (AutomapperTime/FprTime).ToString("###.00") + " X slower");
+            Console.WriteLine("Automapper to Mapster ratio: " + (AutomapperTime/MapsterTime).ToString("###.00") + " X slower");
             Console.WriteLine();
 
             //Test(customer, 1000000);
@@ -97,9 +92,7 @@ namespace Benchmark
 
             //TestEmitMapper<Customer, CustomerDTO>(item, iterations);
 
-            //TestFmTypeAdapter<Customer, CustomerDTO>(item, iterations);
-
-            TestFprAdapter<Customer, CustomerDTO>(item, iterations);
+            TestMapsterAdapter<Customer, CustomerDTO>(item, iterations);
 
             TestAutoMapper<Customer, CustomerDTO>(item, iterations);
         }
@@ -110,9 +103,7 @@ namespace Benchmark
 
             Console.WriteLine("Iterations : {0}", iterations);
 
-            //TestFmTypeAdapter<Foo, Foo>(item, iterations);
-
-            TestFprAdapter<Foo, Foo>(item, iterations);
+            TestMapsterAdapter<Foo, Foo>(item, iterations);
 
             TestValueInjecter<Foo, Foo>(item, iterations);
 
@@ -149,12 +140,13 @@ namespace Benchmark
             }, iterations));
         }
 
-        private static void TestFprAdapter<TSrc, TDest>(TSrc item, int iterations)
+
+        private static void TestMapsterAdapter<TSrc, TDest>(TSrc item, int iterations)
             where TSrc : class
             where TDest : class, new()
         {
-            FprTime = Loop<TSrc>(item, get => TypeAdapter.Adapt<TSrc, TDest>(get), iterations);
-            Console.WriteLine("Fpr:\t\t\t" + FprTime);
+            MapsterTime = Loop(item, get => TypeAdapter.Adapt<TSrc, TDest>(get), iterations);
+            Console.WriteLine("Mapster:\t\t" + MapsterTime);
         }
 
 
@@ -162,7 +154,7 @@ namespace Benchmark
             where TSrc : class
             where TDest : class, new()
         {
-            if (iterations > 500000)
+            if (iterations > 50000)
                 Console.WriteLine("ValueInjecter still working please wait...");
 
             Console.WriteLine("ValueInjecter:\t\t" + Loop<TSrc>(item, get => new TDest().InjectFrom<DeepCloning.FastDeepCloneInjection>(item), iterations));  
@@ -172,7 +164,7 @@ namespace Benchmark
             where TSrc : class
             where TDest : class, new()
         {
-            if(iterations > 500000)
+            if(iterations > 50000)
                 Console.WriteLine("AutoMapper still working please wait...");
 
             AutomapperTime = Loop(item, get => Mapper.Map<TSrc, TDest>(get), iterations);
@@ -209,7 +201,7 @@ namespace Benchmark
                 Address = new Address() { City = "istanbul", Country = "turkey", Id = 1, Street = "istiklal cad." },
                 HomeAddress = new Address() { City = "istanbul", Country = "turkey", Id = 2, Street = "istiklal cad." },
                 Id = 1,
-                Name = "Kıvanç",
+                Name = "Eduardo Najera",
                 Credit = 234.7m,
                 WorkAddresses = new List<Address>() { 
                     new Address() { City = "istanbul", Country = "turkey", Id = 5, Street = "istiklal cad." },
